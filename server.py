@@ -14,7 +14,7 @@ THREAD_COUNT = 0
 HEADER = 512
 FORMAT = 'utf-8'
 DISCONNECT_MSG = "!DISCONNECT"
-
+LOGGED_IN = []
 
 class TerminalBankServer:
 
@@ -26,6 +26,8 @@ class TerminalBankServer:
                 return {'status':False,'data': None,"error":"username already exists.."}
 
             with open(f"db/_{data['username']}.json",'w') as f:
+                del data['type']
+                data['balance'] = 0.0
                 json.dump(data,f)
             return {'status': True,'data': data,"error":None}
         except Exception as e:
@@ -34,6 +36,22 @@ class TerminalBankServer:
 
     def login(self,data):
         print(data['username'],data['password'])
+
+        try:
+            if os.path.exists(f"./db/_{data['username']}.json"):
+                print("exists")
+                with open(f"./db/_{data['username']}.json",'r') as f:
+                    data_from_file = json.load(f)
+                    if data_from_file['password'] == data['password']:
+                        print("password correct")
+                        if data['username'] not in LOGGED_IN:
+                            LOGGED_IN.append(data['username'])
+                        
+                        return {'status':True,'data':data_from_file,'error':None}
+            return {'status':False,'data':None,'error':"username does not exists.."}
+        except Exception as e:
+            print(e)
+            return {'status':False,'data':None,'error':e}
 
     def category(self,type):
         if type == 'login':

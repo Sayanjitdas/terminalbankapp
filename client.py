@@ -11,9 +11,7 @@ DISCONNECT_MSG = "!DISCONNECT"
 SERVER = "192.168.0.105"
 ADDR = (SERVER,PORT)
 CONNECTED = True
-LOGIN_MOD = True
-CREATE_ACC = True
-
+LOGGED_IN = False
 #clearing screen
 def clear():
     if os.name == 'nt':
@@ -56,17 +54,84 @@ class TerminalBank:
     def __init__(self):
         self.server_obj = ServerComm()        
 
-    
     def dashboard(self,data):
-        
-        print(f"{'#'*20} WELCOME TO TERMINAL BANK {'#'*20}\n\n\n")
-        print(f"Hello {data['name']}")
+        global LOGGED_IN
+        if LOGGED_IN:
+            # clear()
+            # print(f"{'#'*20} WELCOME TO TERMINAL BANK {'#'*20}\n\n\n")
+            # print(f"Hello {data['data']['name']}")
+            DASHBOARD_MOD = True
+            while DASHBOARD_MOD:
+                clear()
+                print(f"{'#'*20} WELCOME TO TERMINAL BANK {'#'*20}\n\n\n")
+                print(f"Hello {data['data']['name'].upper()}")
+                selected = input("\n-> PRESS 1 TO CHECK BALANCE\n-> PRESS 2 TO WITHDRAW MONEY\n-> PRESS 3 TO ADD MONEY\n-> PRESS 4 TO EDIT PROFILE\n-> PRESS L TO LOGOUT\n\n")
+                # print(selected)
+                if selected.lower() == 'l':
+                    LOGGED_IN = False
+                    DASHBOARD_MOD = False
+                elif selected == '1':
+                    print(f"your balance is {data['data']['balance']}")
+                    _ = input("press ENTER")
+                elif selected == '2':
+                    amount_to_withdraw = input("amount to withdraw ->")
+                    if float(amount_to_withdraw) < float(data['data']['balance']):
+                        print(f"amount of {amount_to_withdraw} is withdrawn")
+                        #server call to save
+
+                        #code here...
+
+                        print(f"New Balance -> {data['data']['balance']}")
+                        _ = input("press ENTER")
+                    else:
+                        print("insufficient balance for withdrawl")
+                        _ = input("press ENTER")
+                elif selected == '3':
+                    amount_to_add = input("amount to add ->")
+                    data['data']['balance'] = float(data['data']['balance'] + float(amount_to_add))
+                    #server call to save
+
+                    #code here...
+
+                    print(f"New Balance -> {data['data']['balance']}")
+                    _ = input("press ENTER")
+
+                elif selected == '4':
+                    temp_data = {}
+                    for key,val in data['data'].items():
+                        if key != 'balance' and key != 'username':
+                            if key != 'password':
+                                print(f"{key} -> {val}")
+                                user_input = input(f"{key} [press 's' to skip] -> ")
+                                if user_input == 's':
+                                    continue
+                                else:
+                                    temp_data[key] = user_input
+                            else:
+                                print(f"{key} -> ********")
+                                user_input = input(f"{key} [press 's' to skip] -> ")
+                                if user_input == 's':
+                                    continue                           
+                                conf_pass = input(f"confirm password [press 's' to skip] -> ")
+                                if user_input == 's':
+                                    continue
+                                elif conf_pass == user_input:
+                                    temp_data[key] = user_input
+                    
+                    print(temp_data)
+                    
+                    #call to backend to save data
+
+        else:
+            self.login()
 
 
-    def login(self):
-        clear()
+    def login(self,err=None):
         LOGIN_MOD = True
         while LOGIN_MOD:
+            clear()
+            if err is not None:
+                print(f"!!!{err}!!!")
             print(f"{'#'*20} LOGIN {'#'*20}\n\n\n")
             print("ENTER username and password or press q to quit\n")
             username = input("USERNAME -> ")
@@ -84,11 +149,18 @@ class TerminalBank:
                     'username':username,
                     'password':password
                 }
-            data = json.dumps(data)
-            #send data to server will code here...
-            if self.server_obj.send(data):
-                data = self.server_obj.recv()
-                LOGIN_MOD = False
+
+                data = json.dumps(data)
+                if self.server_obj.send(data):
+                    data = self.server_obj.recv()
+                    if data['status']:
+                        LOGIN_MOD = False
+                        global LOGGED_IN
+                        LOGGED_IN = True
+                        self.dashboard(data=data)
+                    else:
+                        LOGIN_MOD = False
+                        self.login(err=data['error'])
 
 
     def create_acc(self,err=None):
