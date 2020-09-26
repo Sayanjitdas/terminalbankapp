@@ -21,8 +21,9 @@ Client Side
 
 	e.dashboard:
 		check_balance
-		transfer money
-		edit profile
+		add money
+		withdraw money
+		logout
 
 Server side
 	
