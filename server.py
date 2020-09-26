@@ -53,11 +53,45 @@ class TerminalBankServer:
             print(e)
             return {'status':False,'data':None,'error':e}
 
+    def add_money(self,data):
+        try:
+            if os.path.exists(f"./db/_{data['username']}.json"):
+                with open(f"db/_{data['username']}.json",'r') as f:
+                    data_from_file = json.load(f)
+                    data_from_file['balance'] = float(data_from_file['balance']) + float(data['amount_to_add'])
+                
+                with open(f"db/_{data['username']}.json",'w') as f:
+                    json.dump(data_from_file,f)
+                return {'status': True,'data': data_from_file,"error":None}
+        except Exception as e:
+            print(e)
+            return {'status':False,'data': None,"error":"something went wrong.."}
+
+    def withdraw_money(self,data):
+        try:
+            if os.path.exists(f"./db/_{data['username']}.json"):
+                with open(f"db/_{data['username']}.json",'r') as f:
+                    data_from_file = json.load(f)
+                    if float(data_from_file['balance']) > float(data['amount_to_withdraw']):
+                        data_from_file['balance'] = float(data_from_file['balance']) - float(data['amount_to_withdraw'])
+                
+                with open(f"db/_{data['username']}.json",'w') as f:
+                    json.dump(data_from_file,f)
+                return {'status': True,'data': data_from_file,"error":None}
+        except Exception as e:
+            print(e)
+            return {'status':False,'data': None,"error":"something went wrong.."}
+
+
     def category(self,type):
         if type == 'login':
             return self.login
         elif type == 'create_acc':
             return self.create_acc
+        elif type == 'add_money':
+            return self.add_money
+        elif type == 'withdraw_money':
+            return self.withdraw_money
 
 
 def client_handle(conn,addr):

@@ -31,7 +31,7 @@ class ServerComm:
         try:
             msg = msg.encode(FORMAT)
             msg_length = len(msg)
-            print(msg_length)
+            # print(msg_length)
             send_length = str(msg_length).encode(FORMAT)
             send_length += b' ' * (HEADER - len(send_length))
             self.client.send(send_length)
@@ -65,60 +65,81 @@ class TerminalBank:
                 clear()
                 print(f"{'#'*20} WELCOME TO TERMINAL BANK {'#'*20}\n\n\n")
                 print(f"Hello {data['data']['name'].upper()}")
-                selected = input("\n-> PRESS 1 TO CHECK BALANCE\n-> PRESS 2 TO WITHDRAW MONEY\n-> PRESS 3 TO ADD MONEY\n-> PRESS 4 TO EDIT PROFILE\n-> PRESS L TO LOGOUT\n\n")
+                selected = input("\n-> PRESS 1 TO CHECK BALANCE\n-> PRESS 2 TO WITHDRAW MONEY\n-> PRESS 3 TO ADD MONEY\n-> PRESS L TO LOGOUT\n\n")
                 # print(selected)
                 if selected.lower() == 'l':
                     LOGGED_IN = False
                     DASHBOARD_MOD = False
+                
                 elif selected == '1':
                     print(f"your balance is {data['data']['balance']}")
                     _ = input("press ENTER")
+                
                 elif selected == '2':
-                    amount_to_withdraw = input("amount to withdraw ->")
+                    amount_to_withdraw = input("amount to withdraw -> ")
                     if float(amount_to_withdraw) < float(data['data']['balance']):
-                        print(f"amount of {amount_to_withdraw} is withdrawn")
+                        data_to_send = json.dumps({
+                            "type":"withdraw_money",
+                            "username": data['data']['username'],
+                            "amount_to_withdraw" : amount_to_withdraw
+                        })
                         #server call to save
-
-                        #code here...
-
-                        print(f"New Balance -> {data['data']['balance']}")
+                        if self.server_obj.send(data_to_send):
+                            returned_data = self.server_obj.recv()
+                            if returned_data['status']:
+                                data['data']['balance'] = float(data['data']['balance']) - float(amount_to_withdraw)
+                                print(f"amount of {amount_to_withdraw} is withdrawn")
+                                print(f"New Balance -> {data['data']['balance']}")
+                            else:
+                                print(data['error'])
                         _ = input("press ENTER")
                     else:
                         print("insufficient balance for withdrawl")
                         _ = input("press ENTER")
+                
                 elif selected == '3':
-                    amount_to_add = input("amount to add ->")
-                    data['data']['balance'] = float(data['data']['balance'] + float(amount_to_add))
+                    amount_to_add = input("amount to add -> ")
+                    data_to_send = json.dumps({
+                        "type":"add_money",
+                        "username":data['data']['username'],
+                        "amount_to_add" : amount_to_add
+                    })
                     #server call to save
-
-                    #code here...
-
-                    print(f"New Balance -> {data['data']['balance']}")
+                    if self.server_obj.send(data_to_send):
+                        returned_data = self.server_obj.recv()
+                        if returned_data['status']:
+                            data['data']['balance'] = float(data['data']['balance'] + float(amount_to_add))
+                            print(f"New Balance -> {data['data']['balance']}")          
+                        else:
+                            print(returned_data['error'])
                     _ = input("press ENTER")
 
                 elif selected == '4':
-                    temp_data = {}
-                    for key,val in data['data'].items():
-                        if key != 'balance' and key != 'username':
-                            if key != 'password':
-                                print(f"{key} -> {val}")
-                                user_input = input(f"{key} [press 's' to skip] -> ")
-                                if user_input == 's':
-                                    continue
-                                else:
-                                    temp_data[key] = user_input
-                            else:
-                                print(f"{key} -> ********")
-                                user_input = input(f"{key} [press 's' to skip] -> ")
-                                if user_input == 's':
-                                    continue                           
-                                conf_pass = input(f"confirm password [press 's' to skip] -> ")
-                                if user_input == 's':
-                                    continue
-                                elif conf_pass == user_input:
-                                    temp_data[key] = user_input
+
+                    #server call to delete account
+
+                    # temp_data = {}
+                    # for key,val in data['data'].items():
+                    #     if key != 'balance' and key != 'username':
+                    #         if key != 'password':
+                    #             print(f"{key} -> {val}")
+                    #             user_input = input(f"{key} [press 's' to skip] -> ")
+                    #             if user_input == 's':
+                    #                 continue
+                    #             else:
+                    #                 temp_data[key] = user_input
+                    #         else:
+                    #             print(f"{key} -> ********")
+                    #             user_input = input(f"{key} [press 's' to skip] -> ")
+                    #             if user_input == 's':
+                    #                 continue                           
+                    #             conf_pass = input(f"confirm password [press 's' to skip] -> ")
+                    #             if user_input == 's':
+                    #                 continue
+                    #             elif conf_pass == user_input:
+                    #                 temp_data[key] = user_input
                     
-                    print(temp_data)
+                    # print(temp_data)
                     
                     #call to backend to save data
 
